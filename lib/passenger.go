@@ -13,7 +13,9 @@ import (
 )
 
 type PassengerPlugin struct {
-	Prefix string
+	Prefix   string
+	WorkDir  string
+	IsBundle bool
 }
 
 func (p PassengerPlugin) MetricKeyPrefix() string {
@@ -49,7 +51,7 @@ func (p PassengerPlugin) GraphDefinition() map[string]mp.Graphs {
 }
 
 func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
-	res, err := getPassengerStatus()
+	res, err := getPassengerStatus(p)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch passenger-status: %s", err)
 	}
@@ -86,8 +88,12 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 	return stat, nil
 }
 
-func getPassengerStatus() (string, error) {
+func getPassengerStatus(p PassengerPlugin) (string, error) {
 	cmd := exec.Command("passenger-status", "--no-header")
+	if p.IsBundle {
+		cmd = exec.Command("bundle", "exec", "passenger-status", "--no-header")
+		cmd.Dir = p.WorkDir
+	}
 
 	res, err := cmd.Output()
 	if err != nil {
@@ -99,9 +105,14 @@ func getPassengerStatus() (string, error) {
 
 func Do() {
 	optTempfile := flag.String("tempfile", "", "Tempfile name")
+	optWorkDir := flag.String("work-dir", "", "work directory")
+	optIsBundle := flag.Bool("is-bundle", false, "is using bundler")
 	flag.Parse()
 
 	var p PassengerPlugin
+	p.WorkDir = fmt.Sprintf("%s", *optWorkDir)
+	p.IsBundle = *optIsBundle
+
 	helper := mp.NewMackerelPlugin(p)
 	helper.Tempfile = *optTempfile
 	helper.Run()
