@@ -13,9 +13,9 @@ import (
 )
 
 type PassengerPlugin struct {
-	Prefix   string
-	WorkDir  string
-	IsBundle bool
+	Prefix     string
+	WorkDir    string
+	BundlePath string
 }
 
 func (p PassengerPlugin) MetricKeyPrefix() string {
@@ -90,8 +90,8 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 
 func getPassengerStatus(p PassengerPlugin) (string, error) {
 	cmd := exec.Command("passenger-status", "--no-header")
-	if p.IsBundle {
-		cmd = exec.Command("bundle", "exec", "passenger-status", "--no-header")
+	if p.BundlePath != "" {
+		cmd = exec.Command(p.BundlePath, "exec", "passenger-status", "--no-header")
 		cmd.Dir = p.WorkDir
 	}
 
@@ -106,12 +106,12 @@ func getPassengerStatus(p PassengerPlugin) (string, error) {
 func Do() {
 	optTempfile := flag.String("tempfile", "", "Tempfile name")
 	optWorkDir := flag.String("work-dir", "", "work directory")
-	optIsBundle := flag.Bool("is-bundle", false, "is using bundler")
+	bundlePath := flag.String("bundle-path", "", "path of bundle command")
 	flag.Parse()
 
 	var p PassengerPlugin
 	p.WorkDir = fmt.Sprintf("%s", *optWorkDir)
-	p.IsBundle = *optIsBundle
+	p.BundlePath = fmt.Sprintf("%s", *bundlePath)
 
 	helper := mp.NewMackerelPlugin(p)
 	helper.Tempfile = *optTempfile
