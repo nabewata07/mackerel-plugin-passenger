@@ -29,7 +29,7 @@ func (p PassengerPlugin) GraphDefinition() map[string]mp.Graphs {
 	labelPrefix := strings.Title(p.Prefix)
 	return map[string]mp.Graphs{
 		"processes": mp.Graphs{
-			Label: (labelPrefix + " ProccessesInQueue"),
+			Label: (labelPrefix + " Processes"),
 			Unit:  mp.UnitInteger,
 			Metrics: []mp.Metrics{
 				mp.Metrics{Name: "processes_in_queue", Label: "ProcessesInQueue"},
