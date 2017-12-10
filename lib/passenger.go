@@ -56,7 +56,7 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 		return nil, fmt.Errorf("Failed to fetch passenger-status: %s", err)
 	}
 
-	r := regexp.MustCompile(`Memory\s+: (\d)+M`)
+	r := regexp.MustCompile(`Memory\s+: (\d+)M`)
 
 	stat := make(map[string]float64)
 	stat["processes_in_queue"] = 0
