@@ -16,6 +16,7 @@ type PassengerPlugin struct {
 	Prefix     string
 	WorkDir    string
 	BundlePath string
+	StatusPath string
 }
 
 func (p PassengerPlugin) MetricKeyPrefix() string {
@@ -89,14 +90,33 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 }
 
 func getPassengerStatus(p PassengerPlugin) (string, error) {
+	cmdAry := [4]string{}
+	statusIndex := 0
 	cmd := exec.Command("passenger-status", "--no-header")
+
 	if p.BundlePath != "" {
-		cmd = exec.Command(p.BundlePath, "exec", "passenger-status", "--no-header")
+		statusIndex = 2
+		cmdAry[0] = p.BundlePath
+		cmdAry[1] = "exec"
+		cmdAry[statusIndex] = "passenger-status"
+	}
+
+	if p.StatusPath != "" {
+		cmdAry[statusIndex] = p.StatusPath
+	}
+
+	if len(cmdAry) > 0 {
+		cmdAry[statusIndex+1] = "--no-header"
+		cmd = exec.Command(cmdAry[0], cmdAry[1:]...)
+	}
+
+	if p.WorkDir != "" {
 		cmd.Dir = p.WorkDir
 	}
 
 	res, err := cmd.Output()
 	if err != nil {
+		// TODO output stdout as error message
 		return "", err
 	}
 
@@ -107,11 +127,13 @@ func Do() {
 	optTempfile := flag.String("tempfile", "", "Tempfile name")
 	optWorkDir := flag.String("work-dir", "", "work directory")
 	bundlePath := flag.String("bundle-path", "", "path of bundle command")
+	statusPath := flag.String("status-path", "", "path of passenger-status command")
 	flag.Parse()
 
 	var p PassengerPlugin
 	p.WorkDir = fmt.Sprintf("%s", *optWorkDir)
 	p.BundlePath = fmt.Sprintf("%s", *bundlePath)
+	p.StatusPath = fmt.Sprintf("%s", *statusPath)
 
 	helper := mp.NewMackerelPlugin(p)
 	helper.Tempfile = *optTempfile
