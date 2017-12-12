@@ -57,36 +57,48 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 		return nil, fmt.Errorf("Failed to fetch passenger-status: %s", err)
 	}
 
-	r := regexp.MustCompile(`Memory\s+: (\d+)M`)
-
 	stat := make(map[string]float64)
 	stat["processes_in_queue"] = 0
 	stat["total_processes"] = 0
 	stat["total_memory"] = 0
 
+	r := regexp.MustCompile(`Memory\s+: (\d+)M`)
+
 	scanner := bufio.NewScanner(strings.NewReader(res))
 	for scanner.Scan() {
 		tmp := scanner.Text()
-		if strings.Contains(tmp, "Requests in queue:") {
+		switch {
+		case strings.Contains(tmp, "Requests in queue:"):
 			arr := strings.Split(tmp, " ")
 			pNum, err := strconv.ParseFloat(arr[5], 32)
 			if err != nil {
 				return stat, err
 			}
 			stat["processes_in_queue"] += pNum
-		} else if strings.Contains(tmp, "* PID") {
+		case strings.Contains(tmp, "* PID"):
 			stat["total_processes"] += 1
-		} else if r.MatchString(tmp) {
+		case r.MatchString(tmp):
 			match := r.FindStringSubmatch(tmp)
 			m, err := strconv.ParseFloat(match[1], 32)
 			if err != nil {
 				return stat, err
 			}
-
 			stat["total_memory"] += m
 		}
 	}
 	return stat, nil
+}
+
+type PassengerStatusError struct {
+	Stdout string
+	Err    error
+}
+
+func (e *PassengerStatusError) Error() string {
+	return fmt.Sprintf(
+		"output of passenger-status : %s\nerror output : %s",
+		e.Stdout, e.Err.Error(),
+	)
 }
 
 func getPassengerStatus(p PassengerPlugin) (string, error) {
@@ -116,8 +128,11 @@ func getPassengerStatus(p PassengerPlugin) (string, error) {
 
 	res, err := cmd.Output()
 	if err != nil {
-		// TODO output stdout as error message
-		return "", err
+		pErr := &PassengerStatusError{
+			Stdout: string(res),
+			Err:    err,
+		}
+		return "", pErr
 	}
 
 	return string(res), nil
