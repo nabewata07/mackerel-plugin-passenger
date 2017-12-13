@@ -51,12 +51,7 @@ func (p PassengerPlugin) GraphDefinition() map[string]mp.Graphs {
 	}
 }
 
-func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
-	res, err := getPassengerStatus(p)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch passenger-status: %s", err)
-	}
-
+func generateStat(res string) (map[string]float64, error) {
 	stat := make(map[string]float64)
 	stat["processes_in_queue"] = 0
 	stat["total_processes"] = 0
@@ -89,6 +84,19 @@ func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
 	return stat, nil
 }
 
+func (p PassengerPlugin) FetchMetrics() (map[string]float64, error) {
+	res, err := getPassengerStatus(p)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fetch passenger-status: %s", err)
+	}
+
+	stat, err := generateStat(res)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse passenger-status: %s", err)
+	}
+	return stat, nil
+}
+
 type PassengerStatusError struct {
 	Stdout string
 	Err    error
@@ -101,26 +109,25 @@ func (e *PassengerStatusError) Error() string {
 	)
 }
 
-func getPassengerStatus(p PassengerPlugin) (string, error) {
+func generateCmdAry(p PassengerPlugin) [4]string {
 	cmdAry := [4]string{}
 	statusIndex := 0
-	cmd := exec.Command("passenger-status", "--no-header")
 
 	if p.BundlePath != "" {
 		statusIndex = 2
 		cmdAry[0] = p.BundlePath
 		cmdAry[1] = "exec"
-		cmdAry[statusIndex] = "passenger-status"
 	}
 
-	if p.StatusPath != "" {
-		cmdAry[statusIndex] = p.StatusPath
-	}
+	cmdAry[statusIndex] = p.StatusPath
+	cmdAry[statusIndex+1] = "--no-header"
 
-	if len(cmdAry) > 0 {
-		cmdAry[statusIndex+1] = "--no-header"
-		cmd = exec.Command(cmdAry[0], cmdAry[1:]...)
-	}
+	return cmdAry
+}
+
+func getPassengerStatus(p PassengerPlugin) (string, error) {
+	cmdAry := generateCmdAry(p)
+	cmd := exec.Command(cmdAry[0], cmdAry[1:]...)
 
 	if p.WorkDir != "" {
 		cmd.Dir = p.WorkDir
@@ -142,7 +149,9 @@ func Do() {
 	optTempfile := flag.String("tempfile", "", "Tempfile name")
 	optWorkDir := flag.String("work-dir", "", "work directory")
 	bundlePath := flag.String("bundle-path", "", "path of bundle command")
-	statusPath := flag.String("status-path", "", "path of passenger-status command")
+	statusPath := flag.String(
+		"status-path", "passenger-status", "path of passenger-status command",
+	)
 	flag.Parse()
 
 	var p PassengerPlugin
