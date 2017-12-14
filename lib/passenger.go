@@ -119,7 +119,12 @@ func generateCmdAry(p PassengerPlugin) [4]string {
 		cmdAry[1] = "exec"
 	}
 
-	cmdAry[statusIndex] = p.StatusPath
+	if p.StatusPath != "" {
+		cmdAry[statusIndex] = p.StatusPath
+	} else {
+		cmdAry[statusIndex] = "passenger-status"
+	}
+
 	cmdAry[statusIndex+1] = "--no-header"
 
 	return cmdAry
