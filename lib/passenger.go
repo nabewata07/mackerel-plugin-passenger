@@ -58,14 +58,15 @@ func generateStat(res string) (map[string]float64, error) {
 	stat["total_memory"] = 0
 
 	r := regexp.MustCompile(`Memory\s+: (\d+)M`)
+	qr := regexp.MustCompile(`Requests in queue: (\d+)`)
 
 	scanner := bufio.NewScanner(strings.NewReader(res))
 	for scanner.Scan() {
 		tmp := scanner.Text()
 		switch {
-		case strings.Contains(tmp, "Requests in queue:"):
-			arr := strings.Split(tmp, " ")
-			pNum, err := strconv.ParseFloat(arr[5], 32)
+		case qr.MatchString(tmp):
+			match := qr.FindStringSubmatch(tmp)
+			pNum, err := strconv.ParseFloat(match[1], 32)
 			if err != nil {
 				return stat, err
 			}
@@ -109,8 +110,8 @@ func (e *PassengerStatusError) Error() string {
 	)
 }
 
-func generateCmdAry(p PassengerPlugin) [4]string {
-	cmdAry := [4]string{}
+func generateCmdBag(p PassengerPlugin) []string {
+	cmdAry := make([]string, 2, 4)
 	statusIndex := 0
 
 	if p.BundlePath != "" {
@@ -119,20 +120,26 @@ func generateCmdAry(p PassengerPlugin) [4]string {
 		cmdAry[1] = "exec"
 	}
 
-	if p.StatusPath != "" {
-		cmdAry[statusIndex] = p.StatusPath
-	} else {
-		cmdAry[statusIndex] = "passenger-status"
+	if p.StatusPath == "" {
+		p.StatusPath = "passenger-status"
 	}
 
-	cmdAry[statusIndex+1] = "--no-header"
+	if statusIndex >= 2 {
+		cmdAry = append(cmdAry, p.StatusPath)
+		cmdAry = append(cmdAry, "--no-header")
+	} else {
+		cmdAry[statusIndex] = p.StatusPath
+		cmdAry[statusIndex+1] = "--no-header"
+	}
 
 	return cmdAry
 }
 
+var execCommand = exec.Command
+
 func getPassengerStatus(p PassengerPlugin) (string, error) {
-	cmdAry := generateCmdAry(p)
-	cmd := exec.Command(cmdAry[0], cmdAry[1:]...)
+	cmdAry := generateCmdBag(p)
+	cmd := execCommand(cmdAry[0], cmdAry[1:]...)
 
 	if p.WorkDir != "" {
 		cmd.Dir = p.WorkDir
