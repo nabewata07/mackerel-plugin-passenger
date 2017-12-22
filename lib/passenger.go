@@ -63,17 +63,18 @@ func generateStat(res string) (map[string]float64, error) {
 	scanner := bufio.NewScanner(strings.NewReader(res))
 	for scanner.Scan() {
 		tmp := scanner.Text()
-		switch {
-		case qr.MatchString(tmp):
+		if qr.MatchString(tmp) {
 			match := qr.FindStringSubmatch(tmp)
 			pNum, err := strconv.ParseFloat(match[1], 32)
 			if err != nil {
 				return stat, err
 			}
 			stat["processes_in_queue"] += pNum
-		case strings.Contains(tmp, "* PID"):
+		}
+		if strings.Contains(tmp, "* PID") {
 			stat["total_processes"] += 1
-		case r.MatchString(tmp):
+		}
+		if r.MatchString(tmp) {
 			match := r.FindStringSubmatch(tmp)
 			m, err := strconv.ParseFloat(match[1], 32)
 			if err != nil {
