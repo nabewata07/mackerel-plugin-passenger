@@ -111,13 +111,13 @@ func (e *PassengerStatusError) Error() string {
 }
 
 func generateCmdBag(p PassengerPlugin) []string {
-	cmdAry := make([]string, 2, 4)
+	cmdBag := make([]string, 2, 4)
 	statusIndex := 0
 
 	if p.BundlePath != "" {
 		statusIndex = 2
-		cmdAry[0] = p.BundlePath
-		cmdAry[1] = "exec"
+		cmdBag[0] = p.BundlePath
+		cmdBag[1] = "exec"
 	}
 
 	if p.StatusPath == "" {
@@ -125,21 +125,21 @@ func generateCmdBag(p PassengerPlugin) []string {
 	}
 
 	if statusIndex >= 2 {
-		cmdAry = append(cmdAry, p.StatusPath)
-		cmdAry = append(cmdAry, "--no-header")
+		cmdBag = append(cmdBag, p.StatusPath)
+		cmdBag = append(cmdBag, "--no-header")
 	} else {
-		cmdAry[statusIndex] = p.StatusPath
-		cmdAry[statusIndex+1] = "--no-header"
+		cmdBag[statusIndex] = p.StatusPath
+		cmdBag[statusIndex+1] = "--no-header"
 	}
 
-	return cmdAry
+	return cmdBag
 }
 
 var execCommand = exec.Command
 
 func getPassengerStatus(p PassengerPlugin) (string, error) {
-	cmdAry := generateCmdBag(p)
-	cmd := execCommand(cmdAry[0], cmdAry[1:]...)
+	cmdBag := generateCmdBag(p)
+	cmd := execCommand(cmdBag[0], cmdBag[1:]...)
 
 	if p.WorkDir != "" {
 		cmd.Dir = p.WorkDir

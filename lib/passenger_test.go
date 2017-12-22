@@ -131,17 +131,3 @@ func TestFetchMetrics(t *testing.T) {
 	}
 }
 
-// func TestGenerateCmdAryNoOption(t *testing.T) {
-	// p := PassengerPlugin{}
-	// c := generateCmdBag(p)
-	// e := []string{
-		// "passenger-status",
-		// "--no-header",
-	// }
-	// if c != e {
-		// t.Errorf("\nexpected : %v\nactual : %v", e, c)
-	// }
-// }
-
-// func TestGenerateCmdAry(t *testing.T) {
-// }
