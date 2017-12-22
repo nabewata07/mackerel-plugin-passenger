@@ -20,7 +20,7 @@ func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
-	// some code here to check arguments perhaps?
+
 	fmt.Fprintf(os.Stdout, strings.Join(os.Args[3:], " "))
 	os.Exit(0)
 }
